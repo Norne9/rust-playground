@@ -1,5 +1,5 @@
 [package]
-name = "rust-playground"
+name = "guess-game"
 version = "0.1.0"
 authors = ["Norne9 <aleksey191295@gmail.com>"]
 edition = "2018"
