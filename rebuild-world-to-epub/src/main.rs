@@ -19,6 +19,7 @@ fn main() {
     println!("{:?}", get_page(&page.link));
 }
 
+// https://www.divinedaolibrary.com/rebuild-world-chapter-1-akira-and-alpha/
 fn get_page(link: &str) -> Vec<String> {
     let page = get_url(link);
     let document = Html::parse_document(&page);
@@ -55,6 +56,7 @@ fn get_page(link: &str) -> Vec<String> {
     result
 }
 
+// https://www.divinedaolibrary.com/rebuild-world/
 fn get_index() -> Index {
     let mut result: Index = Vec::new();
 
