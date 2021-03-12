@@ -2,7 +2,7 @@ mod parser;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::convert::TryInto;
 use std::fs::File;
-use std::io::{BufWriter, Error, Write};
+use std::io::{Error, Write};
 
 fn main() {
     let parser = parser::BookParser::new();
@@ -16,7 +16,7 @@ fn main() {
     let mut chapters = Vec::<parser::Page>::new();
     for page in pages.iter() {
         chapters.push(parser.get_page(&page.link));
-        pb.set_message(format!("Downloading `{}`", page.name));
+        pb.set_message(&format!("Downloading `{}`", page.name));
         pb.inc(1);
     }
 
@@ -32,30 +32,34 @@ fn main() {
 
 fn write_book(chapters: &Vec<parser::Page>) -> Result<(), Error> {
     // open file
-    let file = File::create("rebuild-world.fb2")?;
-    let mut file = BufWriter::new(file);
+    let zip_file = File::create("rebuild-world.fb2.zip")?;
+    let mut zip = zip::ZipWriter::new(zip_file);
+
+    //let options =
+    //    zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Bzip2);
+    zip.start_file("rebuild-world.fb2", Default::default())?;
 
     // write file header
     let first_part = include_str!("start.fb2");
-    write!(file, "{}", first_part)?;
+    write!(zip, "{}", first_part)?;
 
     // write chapters
-    write!(file, "<body>")?;
+    write!(zip, "<body>")?;
     for chapter in chapters.iter() {
-        write!(file, "<section>")?;
-        write!(file, "<title><p>{}</p></title>", chapter.title)?;
+        write!(zip, "<section>")?;
+        write!(zip, "<title><p>{}</p></title>", chapter.title)?;
         for line in chapter.content.iter() {
             match line {
-                parser::Content::Line(text) => write!(file, "<p>{}</p>", text)?,
-                parser::Content::Break => write!(file, "<empty-line />")?,
+                parser::Content::Line(text) => write!(zip, "<p>{}</p>", text)?,
+                parser::Content::Break => write!(zip, "<empty-line></empty-line>")?,
             }
         }
-        write!(file, "</section>")?;
+        write!(zip, "</section>")?;
     }
-    write!(file, "</body>")?;
-    write!(file, "</FictionBook>")?;
+    write!(zip, "</body>")?;
+    write!(zip, "</FictionBook>")?;
 
     // send all pending changes
-    file.flush()?;
+    zip.finish()?;
     Ok(())
 }
