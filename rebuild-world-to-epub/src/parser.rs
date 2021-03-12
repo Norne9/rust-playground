@@ -16,7 +16,12 @@ pub type Index = Vec<Chapter>;
 #[derive(Debug)]
 pub struct Page {
     pub title: String,
-    pub content: Vec<String>,
+    pub content: Vec<Content>,
+}
+#[derive(Debug)]
+pub enum Content {
+    Line(String),
+    Break,
 }
 
 impl BookParser {
@@ -31,7 +36,7 @@ impl BookParser {
             .unwrap(),
             client: reqwest::blocking::Client::new(),
             stop_words: vec![
-                "\u{a0}",
+                //"\u{a0}",
                 "Index ",
                 "Translator: ",
                 "Editor",
@@ -48,18 +53,21 @@ impl BookParser {
         let title = document.select(&self.title_selector).next().unwrap();
         let content = document.select(&self.text_selector).next().unwrap();
 
-        let mut lines = Vec::<String>::new();
+        let mut lines = Vec::<Content>::new();
         for item in content.select(&self.p_selector) {
             let mut result_line = String::new();
             for line in item.text() {
                 if self.stop_words.contains(&line) {
+                    break;
+                } else if line == "\u{a0}" {
+                    lines.push(Content::Break);
                     break;
                 }
                 result_line.push_str(line);
             }
 
             if !result_line.is_empty() {
-                lines.push(result_line)
+                lines.push(Content::Line(result_line));
             }
         }
 
