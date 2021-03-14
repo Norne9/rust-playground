@@ -63,17 +63,19 @@ impl BookParser {
                 } else if line == "\u{a0}" {
                     lines.push(Content::Break);
                     break;
+                } else if line.starts_with("Silavin:") {
+                    break;
                 }
                 result_line.push_str(line);
             }
 
             if !result_line.is_empty() {
-                lines.push(Content::Line(filter_symbols(result_line)));
+                lines.push(Content::Line(result_line));
             }
         }
 
         Page {
-            title: filter_symbols(title.inner_html()),
+            title: title.inner_html(),
             content: lines,
         }
     }
@@ -86,7 +88,7 @@ impl BookParser {
         let document = Html::parse_document(&index_page);
 
         for element in document.select(&self.chpaters_selector) {
-            let name = filter_symbols(element.inner_html());
+            let name = element.inner_html();
             let link = String::from(element.value().attr("href").unwrap());
             result.push(Chapter { name, link });
         }
@@ -110,12 +112,4 @@ impl BookParser {
         }
         panic!("Failed to get page {}\nError: {}", url, last_err);
     }
-}
-
-fn filter_symbols(text: String) -> String {
-    text.replace("\"", "&quot;")
-        .replace("'", "&apos;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace("&", "&amp;")
 }
