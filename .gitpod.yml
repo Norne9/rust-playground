@@ -3,4 +3,4 @@ tasks:
     command: 'echo "TODO: Replace with command to start project"'
 vscode:
   extensions:
-    - rust-lang.rust@0.7.8:CvNqMTgDdt3UXt+6BCDTVg==
+    - matklad.rust-analyzer@0.2.513:NOleMPFGRWL/mDWC6lQ7rA==
