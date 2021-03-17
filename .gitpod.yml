@@ -1,6 +1,3 @@
 tasks:
   - init: cargo build
     command: 'echo "TODO: Replace with command to start project"'
-vscode:
-  extensions:
-    - matklad.rust-analyzer@0.2.513:NOleMPFGRWL/mDWC6lQ7rA==
