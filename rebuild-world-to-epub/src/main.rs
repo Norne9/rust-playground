@@ -1,8 +1,10 @@
 mod parser;
 use indicatif::{ProgressBar, ProgressStyle};
-use std::convert::TryInto;
+use parser::Page;
 use std::fs::File;
 use std::io::{BufWriter, Error, Write};
+use std::path::Path;
+use std::{convert::TryInto, usize};
 
 fn main() {
     let parser = parser::BookParser::new();
@@ -16,11 +18,11 @@ fn main() {
     let mut chapters = Vec::<parser::Page>::new();
     for page in pages.iter() {
         chapters.push(parser.get_page(&page.link));
-        pb.set_message(format!("Downloading `{}`", page.name));
+        pb.set_message(&format!("Downloading `{}`", page.name));
         pb.inc(1);
     }
 
-    pb.set_message("Processing");
+    //pb.set_message("Processing");
     match write_book(&chapters) {
         Ok(_) => pb.finish_with_message("Done!"),
         Err(err) => {
@@ -31,31 +33,93 @@ fn main() {
 }
 
 fn write_book(chapters: &Vec<parser::Page>) -> Result<(), Error> {
+    // Create "Chapters" directory
+    if !Path::new("./Chapters").exists() {
+        std::fs::create_dir("./Chapters")?;
+    }
+
     // open file
-    let file = File::create("rebuild-world.fb2")?;
-    let mut file = BufWriter::new(file);
+    let zip_file = File::create("rebuild-world.fb2.zip")?;
+    let mut zip = zip::ZipWriter::new(zip_file);
+
+    //let options =
+    //    zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Bzip2);
+    zip.start_file("rebuild-world.fb2", Default::default())?;
 
     // write file header
     let first_part = include_str!("start.fb2");
-    write!(file, "{}", first_part)?;
+    write!(zip, "{}", first_part)?;
 
     // write chapters
-    write!(file, "<body>")?;
-    for chapter in chapters.iter() {
-        write!(file, "<section>")?;
-        write!(file, "<title><p>{}</p></title>", chapter.title)?;
+    write!(zip, "<body>")?;
+    for (i, chapter) in chapters.iter().enumerate() {
+        // Write to fb2
+        write!(zip, "<section>")?;
+        write!(
+            zip,
+            "<title><p>{}</p></title>",
+            filter_symbols(&chapter.title)
+        )?;
         for line in chapter.content.iter() {
             match line {
-                parser::Content::Line(text) => write!(file, "<p>{}</p>", text)?,
-                parser::Content::Break => write!(file, "<empty-line />")?,
+                parser::Content::Line(text) => write!(zip, "<p>{}</p>", filter_symbols(text))?,
+                parser::Content::Break => write!(zip, "<empty-line></empty-line>")?,
             }
         }
-        write!(file, "</section>")?;
+        write!(zip, "</section>")?;
+
+        // Write to txt
+        write_text_file(i, chapter)?;
     }
-    write!(file, "</body>")?;
-    write!(file, "</FictionBook>")?;
+    write!(zip, "</body>")?;
+    write!(zip, "</FictionBook>")?;
 
     // send all pending changes
+    zip.finish()?;
+    Ok(())
+}
+
+fn filter_symbols(text: &str) -> String {
+    String::from(text)
+        .replace("\"", "&quot;")
+        .replace("'", "&apos;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace("&", "&amp;")
+}
+
+fn write_text_file(index: usize, page: &Page) -> Result<(), Error> {
+    let name = format!(
+        "./Chapters/{:05} - {}.txt",
+        index,
+        filter_filename(&page.title)
+    );
+
+    let file = File::create(name)?;
+    let mut file = BufWriter::new(file);
+
+    let title = page.title.replace("–", "\n").replace(",", "\n");
+    writeln!(file, "{}", title)?;
+
+    for line in page.content.iter() {
+        match line {
+            parser::Content::Line(text) => write!(file, "{}", text)?,
+            parser::Content::Break => write!(file, "\n")?,
+        }
+    }
+
     file.flush()?;
     Ok(())
+}
+
+fn filter_filename(name: &str) -> String {
+    name.replace("<", "_")
+        .replace(">", "_")
+        .replace(":", "_")
+        .replace("\"", "_")
+        .replace("/", "_")
+        .replace("\\", "_")
+        .replace("|", "_")
+        .replace("?", "_")
+        .replace("*", "_")
 }

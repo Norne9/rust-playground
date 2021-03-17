@@ -41,6 +41,7 @@ impl BookParser {
                 "Translator: ",
                 "Editor",
                 "Proofreader: ",
+                "<<Previous Chapter",
             ],
         }
     }
@@ -61,6 +62,8 @@ impl BookParser {
                     break;
                 } else if line == "\u{a0}" {
                     lines.push(Content::Break);
+                    break;
+                } else if line.starts_with("Silavin:") {
                     break;
                 }
                 result_line.push_str(line);
