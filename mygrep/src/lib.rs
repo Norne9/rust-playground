@@ -11,44 +11,37 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         search_ignore_case
     };
 
-    for result in search_fn(config.query, &content) {
+    for result in search_fn(&config.query, &content) {
         println!("{}", result);
     }
     Ok(())
 }
 
 pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
-    let mut result = vec![];
-    for line in contents.lines() {
-        if line.contains(query) {
-            result.push(line);
-        }
-    }
-    result
+    contents.lines()
+        .filter(|line| line.contains(query))
+        .collect()
 }
 
 pub fn search_ignore_case<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
-    let mut result = vec![];
     let query = query.to_lowercase();
-    for line in contents.lines() {
-        if line.to_lowercase().contains(&query) {
-            result.push(line);
-        }
-    }
-    result
+    contents.lines()
+        .filter(|line| line.to_lowercase().contains(&query))
+        .collect()
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Config<'a> {
-    pub query: &'a str,
-    pub filename: &'a str,
+pub struct Config {
+    pub query: String,
+    pub filename: String,
     pub case_sensitive: bool,
 }
 
-impl<'a> Config<'a> {
-    pub fn new(args: &'a [String]) -> Result<Self, &'static str> {
-        let query = args.get(1).ok_or("Query is not given!")?;
-        let filename = args.get(2).ok_or("Filename is not given!")?;
+impl Config {
+    pub fn new(mut args: env::Args) -> Result<Self, &'static str> {
+        args.next();  // Skip exe name
+        let query = args.next().ok_or("Query is not given!")?;
+        let filename = args.next().ok_or("Filename is not given!")?;
 
         let case_sensitive = env::var("CASE_INSENSITIVE").is_err();
         
