@@ -1,0 +1,17 @@
+[package]
+name = "small-apps"
+version = "0.1.0"
+authors = ["Norne9 <aleksey191295@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+[[bin]]
+name = "tree"
+path = "src/tree.rs"
+
+[[bin]]
+name = "cons"
+path = "src/cons.rs"
